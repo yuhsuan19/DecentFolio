@@ -1,12 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import { IUniswapV2Factory } from "../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import { IUniswapV2Router02 } from "../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+
 struct InvestmentTarget {
     address tokenAddress;
     uint256 percentage; // The percentage of the target
 }
 
 abstract contract DecentFolioStorage {
+    address constant _Uniswap_V2_Factory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+    IUniswapV2Factory uniSwapV2Factory = IUniswapV2Factory(_Uniswap_V2_Factory);
+
     address public admin;
 
     address immutable public basedTokenAddress;

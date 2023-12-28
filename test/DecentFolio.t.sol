@@ -2,11 +2,17 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import { IUniswapV2Factory } from "../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import { IUniswapV2Router02 } from "../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+
 import { MockERC20Token } from "./MockERC20Token.sol";
 
 import { DecentFolio } from "../src/DecentFolio.sol";
 
 contract DecentFolioTest is Test {
+    address _chainlink = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+    address _usdt = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+
     string testTokenName = "TestTokenName";
     string testTokenSymbol = "TestTokenSymbol";
 
@@ -20,7 +26,12 @@ contract DecentFolioTest is Test {
     address[] mockInvestTargetAddresses = [address(mockTargetToken_A), address(mockTargetToken_B), address(mockTargetToken_C), address(mockTargetToken_D)];
     uint256[] mockInvestTargetPercentages = [10, 20, 30, 40];
 
-    function setUp() public {}
+    address constant _Uniswap_V2_Factory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+    IUniswapV2Factory uniSwapV2Factory = IUniswapV2Factory(_Uniswap_V2_Factory);
+
+    function setUp() public {
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
+    }
 
     function test_ConstructorLocal() public {
         DecentFolio testFolio;
