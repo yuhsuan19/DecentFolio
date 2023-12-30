@@ -30,4 +30,8 @@ contract DecentFolio is ERC721, DecentFolioStorage {
     function inveset(uint256 amount) external {
 
     }
+
+    function flashLoan() external {
+
+    }
 }

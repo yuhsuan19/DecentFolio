@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-abstract contract Utility {
+abstract contract AddressBook {
     address constant _uniswapV2Factory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
     address constant _uniswapV2Router = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 

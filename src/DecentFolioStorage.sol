@@ -26,10 +26,6 @@ abstract contract DecentFolioStorage {
         admin = msg.sender;
         basedTokenAddress = _basedTokenAddress; // todo: check isERC20
     
-        require(
-            checkSumOfTargetTokenPercentages(_targetTokenPercentages),
-            "Then sum of target token percentages must equal to 100"
-        );
         initializeInvestmentTargets(_targetTokenAddresses, _targetTokenPercentages);
     }
 
@@ -38,25 +34,13 @@ abstract contract DecentFolioStorage {
         return (target.tokenAddress, target.percentage);
     }
 
-    function checkSumOfTargetTokenPercentages(uint256[] memory _targetTokenPercentages) internal pure returns (bool) {
-        uint256 sum;
-        for (uint256 i = 0; i < _targetTokenPercentages.length; i++) {
-            sum += _targetTokenPercentages[i];
-        }
-        return (sum == 100);
-    }
-
     function initializeInvestmentTargets(
         address[] memory _targetTokenAddresses,
         uint256[] memory _targetTokenPercentages
     ) internal {
-         require(
-            (_targetTokenAddresses.length == _targetTokenPercentages.length), 
-            "The length of target token addresses and target token percentages must be the same"
-        );
         for (uint256 i = 0; i < _targetTokenAddresses.length; i++) {
             InvestmentTarget memory target = InvestmentTarget(
-                _targetTokenAddresses[i], // todo: check isERC20
+                _targetTokenAddresses[i],
                 _targetTokenPercentages[i]
             );
             investmentTargets.push(target);

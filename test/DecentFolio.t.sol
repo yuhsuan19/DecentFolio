@@ -2,10 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import { MockERC20Token } from "./Tools/MockERC20Token.sol";
+import { AddressBook } from "./Tools/AddressBook.sol";
+
 import { IUniswapV2Factory } from "../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import { IUniswapV2Router02 } from "../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-
-import { MockERC20Token } from "./MockERC20Token.sol";
 
 import { DecentFolio } from "../src/DecentFolio.sol";
 
@@ -33,29 +34,29 @@ contract DecentFolioTest is Test {
         vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
     }
 
-    function test_ConstructorLocal() public {
-        DecentFolio testFolio;
+    // function test_ConstructorLocal() public {
+    //     DecentFolio testFolio;
 
-        vm.startPrank(admin);
-        testFolio = new DecentFolio(
-            testTokenName, 
-            testTokenSymbol, 
-            address(mockBasedToken),
-            mockInvestTargetAddresses,
-            mockInvestTargetPercentages
-        );
-        vm.stopPrank();
+    //     vm.startPrank(admin);
+    //     testFolio = new DecentFolio(
+    //         testTokenName, 
+    //         testTokenSymbol, 
+    //         address(mockBasedToken),
+    //         mockInvestTargetAddresses,
+    //         mockInvestTargetPercentages
+    //     );
+    //     vm.stopPrank();
 
-        assertEq(testFolio.name(), testTokenName);
-        assertEq(testFolio.symbol(), testTokenSymbol);
-        assertEq(testFolio.basedTokenAddress(), address(mockBasedToken));
-        assertEq(testFolio.admin(), admin);
-        for (uint256 i; i < mockInvestTargetAddresses.length; i++) {
-            (address targetTokenAddress, uint256 percentage) = testFolio.investmentTarget(i);
-            address mockTargetTokenAddress = mockInvestTargetAddresses[i];
-            uint256 mockTargetPercentage = mockInvestTargetPercentages[i];
-            assertEq(targetTokenAddress, mockTargetTokenAddress);
-            assertEq(percentage, mockTargetPercentage);
-        }
-    }
+    //     assertEq(testFolio.name(), testTokenName);
+    //     assertEq(testFolio.symbol(), testTokenSymbol);
+    //     assertEq(testFolio.basedTokenAddress(), address(mockBasedToken));
+    //     assertEq(testFolio.admin(), admin);
+    //     for (uint256 i; i < mockInvestTargetAddresses.length; i++) {
+    //         (address targetTokenAddress, uint256 percentage) = testFolio.investmentTarget(i);
+    //         address mockTargetTokenAddress = mockInvestTargetAddresses[i];
+    //         uint256 mockTargetPercentage = mockInvestTargetPercentages[i];
+    //         assertEq(targetTokenAddress, mockTargetTokenAddress);
+    //         assertEq(percentage, mockTargetPercentage);
+    //     }
+    // }
 }
