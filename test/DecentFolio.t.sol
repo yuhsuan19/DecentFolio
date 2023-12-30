@@ -27,9 +27,6 @@ contract DecentFolioTest is Test {
     address[] mockInvestTargetAddresses = [address(mockTargetToken_A), address(mockTargetToken_B), address(mockTargetToken_C), address(mockTargetToken_D)];
     uint256[] mockInvestTargetPercentages = [10, 20, 30, 40];
 
-    address constant _Uniswap_V2_Factory = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
-    IUniswapV2Factory uniSwapV2Factory = IUniswapV2Factory(_Uniswap_V2_Factory);
-
     function setUp() public {
         vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
     }
