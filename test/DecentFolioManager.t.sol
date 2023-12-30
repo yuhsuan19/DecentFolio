@@ -20,7 +20,8 @@ contract DecentFolioManagerTest is Test, AddressBook {
 
         vm.startPrank(owner);
         decentFolioManager = new DecentFolioManager(
-            _uniswapV2Router
+            _uniswapV2Router,
+            _uniswapV2Factory
         );
         vm.stopPrank();
     }
@@ -34,5 +35,14 @@ contract DecentFolioManagerTest is Test, AddressBook {
             decentFolioManager.uniswapRouterAddress(),
             _uniswapV2Router
         );
+        assertEq(
+            decentFolioManager.uniswapFactoryAddress(),
+            _uniswapV2Factory
+        );
+    }
+
+    function test_CreateDecentFolio_BasedTokenNotERC20() public {
+        address mockAddress = makeAddr("mockAddress");
+
     }
 }

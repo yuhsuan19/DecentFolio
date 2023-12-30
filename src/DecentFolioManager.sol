@@ -2,22 +2,29 @@
 pragma solidity ^0.8.13;
 
 import { IUniswapV2Router02 } from "../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import { IUniswapV2Factory } from "../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import { DecentFolio } from "./DecentFolio.sol";
+import { DecentFolioCreateChecker } from "./DecentFolioCreateChecker.sol";
 
-contract DecentFolioManager {
+contract DecentFolioManager is DecentFolioCreateChecker {
     
     address public owner;
-    address public uniswapRouterAddress;
-    IUniswapV2Router02 uniswapRouter;
+    address public immutable uniswapRouterAddress;
+    IUniswapV2Router02 immutable uniswapRouter;
+    address public immutable uniswapFactoryAddress;
+    IUniswapV2Factory immutable uniswapFactory;
 
     DecentFolio[] public decentFolios;
 
     constructor(
-        address _uniSwapRouterAddress
+        address _uniSwapRouterAddress,
+        address _uniswapFactoryAddress
     ) {
         owner = msg.sender;
         uniswapRouterAddress = _uniSwapRouterAddress;
         uniswapRouter = IUniswapV2Router02(uniswapRouterAddress);
+        uniswapFactoryAddress = _uniswapFactoryAddress;
+        uniswapFactory = IUniswapV2Factory(uniswapFactoryAddress);
     }
 
     function createERC20BasedFolio(
@@ -27,10 +34,11 @@ contract DecentFolioManager {
         address[] memory _targetTokenAddresses,
         uint256[] memory _targetTokenPercentages
     ) external returns (uint256) {
-        _checkBasedToken(_basedTokenAddress);
-        _checkTargetTokens(
+        _checkBasedTokenAndTargetTokens(
+            _basedTokenAddress,
             _targetTokenAddresses, 
-            _targetTokenPercentages
+            _targetTokenPercentages,
+            uniswapFactoryAddress
         );
 
         DecentFolio folio = new DecentFolio(
@@ -44,48 +52,5 @@ contract DecentFolioManager {
 
         // return the index of new created folio
         return decentFolios.length - 1;
-    }
-
-    function _checkBasedToken(address _basedTokenAddress) private {
-        require(
-            _checkIsERC20(_basedTokenAddress),
-            "The based token must be ERC20"
-        );
-    }
-
-    function _checkTargetTokens(
-        address[] memory _targetTokenAddresses,
-        uint256[] memory _targetTokenPercentages
-    ) private {
-        require(
-            (_targetTokenAddresses.length == _targetTokenPercentages.length), 
-            "The length of target token addresses and target token percentages must be the same"
-        );
-        require(
-            _checkSumOfTargetTokenPercentages(_targetTokenPercentages),
-            "The sum of target token percentages must equal to 100"
-        );
-    }
-
-    function _checkSumOfTargetTokenPercentages(uint256[] memory _targetTokenPercentages) private returns (bool) {
-        uint256 sum;
-        for (uint256 i = 0; i < _targetTokenPercentages.length; i++) {
-            sum += _targetTokenPercentages[i];
-        }
-        return (sum == 100);
-    }
-    
-    function _checkIsERC20(address _address) private returns (bool) {
-        uint size;
-        assembly {
-            size := extcodesize(_address)
-        }
-
-        if (size <= 0) {
-            return false;
-        } else {
-          (bool success,) = _address.call(abi.encodeWithSignature("totalSupply()"));
-          return success;
-        }
     }
 }
