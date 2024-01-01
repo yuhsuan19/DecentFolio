@@ -6,8 +6,8 @@ import { AddressBook } from "./Tools/AddressBook.sol";
 import { MockERC20Token } from "./Tools/MockERC20Token.sol";
 
 import { IUniswapV2Router02 } from "../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import { DecentFolio } from "../src/DecentFolio.sol";
-import { DecentFolioManager } from "../src/DecentFolioManager.sol";
+import { DecentFolio } from "../src/DecentFolio/DecentFolio.sol";
+import { DecentFolioManager } from "../src/DecentFolioManager/DecentFolioManager.sol";
 
 
 contract DecentFolioManagerTest is Test, AddressBook {
@@ -58,8 +58,6 @@ contract DecentFolioManagerTest is Test, AddressBook {
         vm.startPrank(folioAdmin);
         vm.expectRevert("The based token must be ERC20");
         decentFolioManager.createERC20BasedFolio(
-            "MyFolio", 
-            "MF", 
             mockAddress, 
             targetTokenAddress, 
             targetTokenPercentage
@@ -73,8 +71,6 @@ contract DecentFolioManagerTest is Test, AddressBook {
         vm.startPrank(folioAdmin);
         vm.expectRevert("The input of target tokens cannot be empty");
         decentFolioManager.createERC20BasedFolio(
-            "MyFolio", 
-            "MF", 
             basedTokenAddress, 
             emptyAddresses, 
             targetTokenPercentage
@@ -86,8 +82,6 @@ contract DecentFolioManagerTest is Test, AddressBook {
         vm.startPrank(folioAdmin);
         vm.expectRevert("The length of target token addresses and target token percentages must be the same");
         decentFolioManager.createERC20BasedFolio(
-            "MyFolio", 
-            "MF", 
             basedTokenAddress, 
             targetTokenAddress, 
             wrongLengthTargetTokenPercentage
@@ -99,8 +93,6 @@ contract DecentFolioManagerTest is Test, AddressBook {
         vm.startPrank(folioAdmin);
         vm.expectRevert("The sum of target token percentages must equal to 100");
         decentFolioManager.createERC20BasedFolio(
-            "MyFolio", 
-            "MF", 
             basedTokenAddress, 
             targetTokenAddress, 
             wrongSumTargetTokenPercentage
@@ -112,8 +104,6 @@ contract DecentFolioManagerTest is Test, AddressBook {
         vm.startPrank(folioAdmin);
         vm.expectRevert("The target token must be ERC20");
         decentFolioManager.createERC20BasedFolio(
-            "MyFolio", 
-            "MF", 
             basedTokenAddress, 
             notERC20TargetTokenAddresses, 
             targetTokenPercentage
@@ -131,8 +121,6 @@ contract DecentFolioManagerTest is Test, AddressBook {
 
         vm.expectRevert("Cannot find the pair of based token and target token in Uniswap V2");
         decentFolioManager.createERC20BasedFolio(
-            "MyFolio", 
-            "MF", 
             basedTokenAddress, 
             notUniSwapV2PairTargetTokenAddresses, 
             targetTokenPercentage

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { IUniswapV2Factory } from "../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
+import { IUniswapV2Factory } from "../../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 
 abstract contract DecentFolioCreateChecker {
 
