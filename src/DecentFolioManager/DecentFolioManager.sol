@@ -51,16 +51,24 @@ contract DecentFolioManager is DecentFolioCreateChecker {
             _basedTokenAddress, 
             _targetTokenAddresses, 
             _targetTokenPercentages, 
-            uniswapFactoryAddress
+            uniswapRouterAddress
         );
         DecentFolioProxy proxy = new DecentFolioProxy(
             implementationAddress,
             initialCallData
         );
-        
         decentFolios.push(address(proxy));
 
         // return the index of new created folio
         return decentFolios.length - 1;
+    }
+
+    function decentFolio(uint256 index) view public returns (address) {
+        require(
+            index < decentFolios.length,
+            "The index of DecentFolio not exist"
+        );
+        address decentFolioAddress = decentFolios[index];
+        return decentFolioAddress;
     }
 }

@@ -5,12 +5,11 @@ import "forge-std/Test.sol";
 import { AddressBook } from "./Tools/AddressBook.sol";
 import { MockERC20Token } from "./Tools/MockERC20Token.sol";
 
-import { IUniswapV2Router02 } from "../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import { DecentFolio } from "../src/DecentFolio/DecentFolio.sol";
 import { DecentFolioManager } from "../src/DecentFolioManager/DecentFolioManager.sol";
 
 
-contract DecentFolioManagerTest is Test, AddressBook {
+contract ConstructorAndCreateFolioTest is Test, AddressBook {
 
     address private owner = makeAddr("owner");
     
@@ -50,6 +49,29 @@ contract DecentFolioManagerTest is Test, AddressBook {
             decentFolioManager.uniswapFactoryAddress(),
             _uniswapV2Factory
         );
+    }
+
+    function test_CreateDecentFolio_Success() public {
+        vm.startPrank(folioAdmin);
+        uint256 index = decentFolioManager.createERC20BasedFolio(
+            basedTokenAddress, 
+            targetTokenAddress, 
+            targetTokenPercentage
+        );
+        vm.stopPrank();        
+        assertEq(index, 0);
+
+        address folioAddress = decentFolioManager.decentFolio(index);
+        DecentFolio decentFolio = DecentFolio(folioAddress);
+        assertEq(decentFolio.admin(), address(decentFolioManager));
+        assertEq(decentFolio.basedTokenAddress(), basedTokenAddress);
+        assertEq(decentFolio.uniswapV2RouterAddress(), _uniswapV2Router);
+        
+        for (uint256 i; i < targetTokenAddress.length; i++) {
+            (address _address, uint256 _percentage) = decentFolio.investmentTarget(i);
+            assertEq(targetTokenAddress[i], _address);
+            assertEq(targetTokenPercentage[i], _percentage);
+        }
     }
 
     function test_CreateDecentFolio_BasedTokenNotERC20() public {

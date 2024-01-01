@@ -12,7 +12,7 @@ abstract contract DecentFolioStorage {
     address public basedTokenAddress;
     InvestmentTarget[] public investmentTargets;
     
-    address uniswapV2RouterAddress;
+    address public uniswapV2RouterAddress;
     IUniswapV2Router02 uniswapV2Router;
 
     bool initialized;

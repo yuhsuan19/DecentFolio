@@ -5,8 +5,9 @@ import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { IUniswapV2Router02 } from "../../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import { InvestmentTarget, DecentFolioStorage } from "./DecentFolioStorage.sol";
+import { AdminOnly } from "./Utilities/AdminOnly.sol";
 
-contract DecentFolio is ERC721, DecentFolioStorage {
+contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
 
     modifier isInitialized {
         require(
