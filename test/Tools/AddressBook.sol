@@ -12,4 +12,5 @@ abstract contract AddressBook {
     address constant _pepe = 0x6982508145454Ce325dDbE47a25d4ec3d2311933;
     address constant _comp = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     address constant _wbtc = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+    address constant _1inch = 0x4206931337dc273a630d328dA6441786BfaD668f;
 }

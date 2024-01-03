@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { IUniswapV2Router02 } from "../../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IUniswapV2Router01 } from "../../lib/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 
 struct InvestmentTarget {
     address tokenAddress;
@@ -10,12 +11,13 @@ struct InvestmentTarget {
 
 abstract contract DecentFolioStorage {
     address public basedTokenAddress;
+    IERC20 basedToken;
     InvestmentTarget[] public investmentTargets;
     
     address public uniswapV2RouterAddress;
-    IUniswapV2Router02 uniswapV2Router;
+    IUniswapV2Router01 uniswapV2Router;
 
-    bool initialized;
+    bool public initialized;
 
     function investmentTarget(uint256 index) public view returns (address, uint256) {
         InvestmentTarget memory target = investmentTargets[index];

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
-// test
 import "forge-std/Test.sol";
 import { AddressBook } from "./Tools/AddressBook.sol";
 import { MockERC20Token } from "./Tools/MockERC20Token.sol";
@@ -11,7 +10,7 @@ import { DecentFolioManager } from "../src/DecentFolioManager/DecentFolioManager
 
 contract ConstructorAndCreateFolioTest is Test, AddressBook {
 
-    address private owner = makeAddr("owner");
+    address private owner;
     
     address private folioAdmin = makeAddr("folioAdmin");
     address private basedTokenAddress = _usdt;
@@ -27,6 +26,9 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
 
     function setUp() public {
         vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
+
+        owner = makeAddr("owner");
+        deal(owner, 1_000 ether);
 
         vm.startPrank(owner);
         decentFolioManager = new DecentFolioManager(
@@ -66,6 +68,7 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
         assertEq(decentFolio.admin(), address(decentFolioManager));
         assertEq(decentFolio.basedTokenAddress(), basedTokenAddress);
         assertEq(decentFolio.uniswapV2RouterAddress(), _uniswapV2Router);
+        assert(decentFolio.initialized());
         
         for (uint256 i; i < targetTokenAddress.length; i++) {
             (address _address, uint256 _percentage) = decentFolio.investmentTarget(i);

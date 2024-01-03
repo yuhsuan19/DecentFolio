@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import { DecentFolioCreateChecker } from "./DecentFolioCreateChecker.sol";
 
-import { IUniswapV2Router02 } from "../../lib/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import { IUniswapV2Router01 } from "../../lib/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 import { IUniswapV2Factory } from "../../lib/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 
 import { DecentFolio } from "../DecentFolio/DecentFolio.sol";
@@ -13,7 +13,7 @@ contract DecentFolioManager is DecentFolioCreateChecker {
     
     address public owner;
     address public immutable uniswapRouterAddress;
-    IUniswapV2Router02 immutable uniswapRouter;
+    IUniswapV2Router01 immutable uniswapRouter;
     address public immutable uniswapFactoryAddress;
     IUniswapV2Factory immutable uniswapFactory;
 
@@ -26,7 +26,7 @@ contract DecentFolioManager is DecentFolioCreateChecker {
     ) {
         owner = msg.sender;
         uniswapRouterAddress = _uniSwapRouterAddress;
-        uniswapRouter = IUniswapV2Router02(uniswapRouterAddress);
+        uniswapRouter = IUniswapV2Router01(uniswapRouterAddress);
         uniswapFactoryAddress = _uniswapFactoryAddress;
         uniswapFactory = IUniswapV2Factory(uniswapFactoryAddress);
 
@@ -63,12 +63,14 @@ contract DecentFolioManager is DecentFolioCreateChecker {
         return decentFolios.length - 1;
     }
 
-    function decentFolio(uint256 index) view public returns (address) {
+    function decentFolio(
+        uint256 _index
+    ) view public returns (address) {
         require(
-            index < decentFolios.length,
+            _index < decentFolios.length,
             "The index of DecentFolio not exist"
         );
-        address decentFolioAddress = decentFolios[index];
+        address decentFolioAddress = decentFolios[_index];
         return decentFolioAddress;
     }
 }
