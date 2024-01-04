@@ -61,11 +61,13 @@ contract InvestTest is Test, AddressBook {
             address(decentFolio), 
             1000 * 10 ** basedToken.decimals()
         );
-        decentFolio.inveset(
+        uint256 _tokenId = decentFolio.inveset(
             1000 * 10 ** basedToken.decimals(),
             0
         );
         vm.stopPrank();
+
+        assertEq(_tokenId, 0);
 
         for (uint256 i; i < targetTokenAddress.length; i++) {
             address _targetTokenAddress = targetTokenAddress[i];

@@ -45,19 +45,46 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
     }
 
     function inveset(
-        uint256 _amount, // 1000 e6
-        uint256 _timestamp
-    ) external isInitialized {
-        basedToken.transferFrom(
-            msg.sender,
-            address(this),
+        uint256 _amount,
+        uint256 _lockedTimeInterval
+    ) external isInitialized returns (uint256 tokenId) {
+        
+        uint256 _tokenId = totalSupply;
+
+        multiSwapTargets(
+            _tokenId, 
             _amount
         );
 
-        for (uint256 index; index < investmentTargets.length; index ++) {
+        _mint(
+            msg.sender, 
+            _tokenId
+        );
+        totalSupply = totalSupply + 1;
+        
+        totalLockedTimeInterval = totalLockedTimeInterval + _lockedTimeInterval;
+
+        lockedTimeIntervals[_tokenId] = _lockedTimeInterval;
+        unlockedTimeStamps[_tokenId] = block.timestamp + _lockedTimeInterval;
+
+        return _tokenId;
+    }
+
+    function multiSwapTargets(
+        uint256 _tokenId,
+        uint256 _amountIn
+    ) private {
+
+        basedToken.transferFrom(
+            msg.sender,
+            address(this),
+            _amountIn
+        );
+        
+        for (uint256 index; index < investmentTargets.length; index ++) {    
             (address _targetAddress, uint256 _percentage) = investmentTarget(index);
 
-            uint256 _amountIn = _amount * _percentage / 100;
+            uint256 _targetAmountIn = _amountIn * _percentage / 100;
 
             address[] memory _path = new address[](2);
             _path[0] = basedTokenAddress;
@@ -66,10 +93,10 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
             uint256 _balBeforeSwap = IERC20(_targetAddress).balanceOf(address(this));
             basedToken.approve(
                 uniswapV2RouterAddress, 
-                _amountIn
+                _targetAmountIn
             );
             uint256[] memory _swapAmounts = uniswapV2Router.swapExactTokensForTokens(
-                _amountIn, 
+                _targetAmountIn, 
                 0, 
                 _path, 
                 address(this), 
@@ -80,6 +107,9 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
                 (_balAfterSwap == _balBeforeSwap + _swapAmounts[1]), 
                 "Fail to swap"
             );
+
+            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] + _swapAmounts[1];
+            investTokenAmounts[_tokenId][_targetAddress] = _swapAmounts[1];
         }
     }
 

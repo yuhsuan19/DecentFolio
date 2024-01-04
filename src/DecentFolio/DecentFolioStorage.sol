@@ -17,6 +17,17 @@ abstract contract DecentFolioStorage {
     address public uniswapV2RouterAddress;
     IUniswapV2Router01 uniswapV2Router;
 
+    uint256 public totalSupply;
+
+    uint256 public totalLockedTimeInterval;
+    mapping(uint256 tokenId => uint256) public lockedTimeIntervals;
+    mapping(uint256 tokenId => uint256) public unlockedTimeStamps;
+
+    mapping(address targetTokenAddress => uint256) public totalInvestTokenAmounts;
+    mapping(uint256 totkenId => mapping(address targetTokenAddress => uint256)) public investTokenAmounts;
+
+    mapping(address targetTokenAddress => uint256) public totalProfitTokenAmounts;
+
     bool public initialized;
 
     function investmentTarget(uint256 index) public view returns (address, uint256) {
