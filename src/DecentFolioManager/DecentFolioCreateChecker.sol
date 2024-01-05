@@ -86,7 +86,7 @@ abstract contract DecentFolioCreateChecker {
     
     function _checkIsERC20(
         address _address
-    ) internal returns (bool) {
+    ) internal returns (bool isERC20) {
         uint size;
         assembly {
             size := extcodesize(_address)

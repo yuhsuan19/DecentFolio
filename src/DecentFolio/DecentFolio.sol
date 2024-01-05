@@ -21,6 +21,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         _;
     }
 
+    // Note: just for deploying implemetation contract
     constructor() ERC721(
         "DecentFolioImplementation", 
         "DF"
@@ -48,8 +49,19 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         uint256 _amount,
         uint256 _lockedTimeInterval
     ) external isInitialized returns (uint256 tokenId) {
-        
+        require(
+            _amount > 0,
+            "The amount of investment must not be zero"
+        );
+
         uint256 _tokenId = totalSupply;
+
+        totalSupply = totalSupply + 1;
+
+        totalLockedTimeInterval = totalLockedTimeInterval + _lockedTimeInterval;
+
+        lockedTimeIntervals[_tokenId] = _lockedTimeInterval;
+        unlockedTimeStamps[_tokenId] = block.timestamp + _lockedTimeInterval;
 
         multiSwapTargets(
             _tokenId, 
@@ -60,14 +72,85 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
             msg.sender, 
             _tokenId
         );
-        totalSupply = totalSupply + 1;
-        
-        totalLockedTimeInterval = totalLockedTimeInterval + _lockedTimeInterval;
-
-        lockedTimeIntervals[_tokenId] = _lockedTimeInterval;
-        unlockedTimeStamps[_tokenId] = block.timestamp + _lockedTimeInterval;
-
         return _tokenId;
+    }
+
+    function fragAndTransfer(
+         uint256 _tokenId,
+         uint256 _transferPercentage, 
+         address _to
+    ) external returns (uint256 fromTokenId, uint256 toTokenId) {
+
+        uint256 _fromTokenId = totalSupply;
+        uint256 _toTokenId = totalSupply + 1;
+        totalSupply = totalSupply + 2;
+
+        totalLockedTimeInterval = lockedTimeIntervals[_tokenId] * 2;
+        lockedTimeIntervals[_fromTokenId] = lockedTimeIntervals[_tokenId];
+        lockedTimeIntervals[_toTokenId] = lockedTimeIntervals[_tokenId];
+
+        unlockedTimeStamps[_fromTokenId] = unlockedTimeStamps[_tokenId];
+        unlockedTimeStamps[_toTokenId] = unlockedTimeStamps[_tokenId];
+
+        for (uint256 index; index < investmentTargets.length; index ++) {
+            (address _targetAddress,) = investmentTarget(index);
+            uint256 _investAmount = investTokenAmounts[_tokenId][_targetAddress];
+
+            uint256 _toAmount = _investAmount * _transferPercentage / 100;
+            uint256 _fromAmount = _investAmount - _toAmount;
+
+            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] + _toAmount + _fromAmount;
+            investTokenAmounts[_toTokenId][_targetAddress] = _toAmount;
+            investTokenAmounts[_fromTokenId][_targetAddress] = _fromAmount;
+        }
+
+        burn(_tokenId);
+        _mint(
+            msg.sender, 
+            _fromTokenId
+        );
+        _mint(
+            _to, 
+            _toTokenId
+        );
+
+        return(_fromTokenId, _toTokenId);
+    }
+
+    function burn(
+        uint256 _tokenId
+    ) private {
+        totalLockedTimeInterval = totalLockedTimeInterval - lockedTimeIntervals[_tokenId];
+
+        for (uint256 index; index < investmentTargets.length; index ++) {    
+            (address _targetAddress,) = investmentTarget(index);
+            uint256 _investAmount = investTokenAmounts[_tokenId][_targetAddress];
+
+            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] - _investAmount;
+        }
+
+        _burn(_tokenId);
+    }
+
+    function flashLoan() external isInitialized {
+
+    }
+
+    function syncBalances() external {
+
+    }
+
+    function initializeInvestmentTargets(
+        address[] memory _targetTokenAddresses,
+        uint256[] memory _targetTokenPercentages
+    ) internal {
+        for (uint256 i = 0; i < _targetTokenAddresses.length; i++) {
+            InvestmentTarget memory target = InvestmentTarget(
+                _targetTokenAddresses[i],
+                _targetTokenPercentages[i]
+            );
+            investmentTargets.push(target);
+        }
     }
 
     function multiSwapTargets(
@@ -110,23 +193,6 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
 
             totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] + _swapAmounts[1];
             investTokenAmounts[_tokenId][_targetAddress] = _swapAmounts[1];
-        }
-    }
-
-    function flashLoan() external isInitialized {
-
-    }
-
-    function initializeInvestmentTargets(
-        address[] memory _targetTokenAddresses,
-        uint256[] memory _targetTokenPercentages
-    ) internal {
-        for (uint256 i = 0; i < _targetTokenAddresses.length; i++) {
-            InvestmentTarget memory target = InvestmentTarget(
-                _targetTokenAddresses[i],
-                _targetTokenPercentages[i]
-            );
-            investmentTargets.push(target);
         }
     }
 }

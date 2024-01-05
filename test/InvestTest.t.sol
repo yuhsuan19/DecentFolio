@@ -68,6 +68,7 @@ contract InvestTest is Test, AddressBook {
         vm.stopPrank();
 
         assertEq(_tokenId, 0);
+        assertEq(decentFolio.ownerOf(_tokenId), investor);
 
         for (uint256 i; i < targetTokenAddress.length; i++) {
             address _targetTokenAddress = targetTokenAddress[i];

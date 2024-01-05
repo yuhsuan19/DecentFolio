@@ -30,7 +30,9 @@ abstract contract DecentFolioStorage {
 
     bool public initialized;
 
-    function investmentTarget(uint256 index) public view returns (address, uint256) {
+    function investmentTarget(
+        uint256 index
+    ) public view returns (address targetTokenAddress, uint256 targetTokenPercentage) {
         InvestmentTarget memory target = investmentTargets[index];
         return (target.tokenAddress, target.percentage);
     }

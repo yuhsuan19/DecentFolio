@@ -38,7 +38,7 @@ contract DecentFolioManager is DecentFolioCreateChecker {
         address _basedTokenAddress,
         address[] memory _targetTokenAddresses,
         uint256[] memory _targetTokenPercentages
-    ) external returns (uint256) {
+    ) external returns (uint256 index) {
         _checkBasedTokenAndTargetTokens(
             _basedTokenAddress,
             _targetTokenAddresses, 
@@ -65,12 +65,12 @@ contract DecentFolioManager is DecentFolioCreateChecker {
 
     function decentFolio(
         uint256 _index
-    ) view public returns (address) {
+    ) view public returns (address decentFolioAddress) {
         require(
             _index < decentFolios.length,
             "The index of DecentFolio not exist"
         );
-        address decentFolioAddress = decentFolios[_index];
-        return decentFolioAddress;
+        address _decentFolioAddress = decentFolios[_index];
+        return _decentFolioAddress;
     }
 }
