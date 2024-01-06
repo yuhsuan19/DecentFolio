@@ -38,7 +38,8 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         address[] memory _targetTokenAddresses,
         uint256[] memory _targetTokenPercentages,
         address _uniswapV2RouterAddress,
-        uint256 _flashLoanInterestRate
+        uint256 _flashLoanInterestRate,
+        uint256 _propsalExecutedThreshold
     ) public {
         basedTokenAddress = _basedTokenAddress;
         basedToken = IERC20(_basedTokenAddress);
@@ -49,6 +50,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         uniswapV2RouterAddress = _uniswapV2RouterAddress;
         uniswapV2Router = IUniswapV2Router01(uniswapV2RouterAddress);
         flashLoanInterestRate = _flashLoanInterestRate;
+        proposalExectedThreshold = _propsalExecutedThreshold;
 
         initialized = true;
     }
@@ -70,6 +72,9 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
 
         lockedTimeIntervals[_tokenId] = _lockedTimeInterval;
         unlockedTimeStamps[_tokenId] = block.timestamp + _lockedTimeInterval;
+        
+        totalBasedTokenAmount = totalBasedTokenAmount + _amount;
+        basedTokenAmounts[_tokenId] = _amount;
 
         multiSwapTargets(
             _tokenId, 
@@ -93,12 +98,17 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         uint256 _toTokenId = totalSupply + 1;
         totalSupply = totalSupply + 2;
 
-        totalLockedTimeInterval = lockedTimeIntervals[_tokenId] * 2;
+        totalLockedTimeInterval = totalLockedTimeInterval + (lockedTimeIntervals[_tokenId] * 2);
         lockedTimeIntervals[_fromTokenId] = lockedTimeIntervals[_tokenId];
         lockedTimeIntervals[_toTokenId] = lockedTimeIntervals[_tokenId];
 
         unlockedTimeStamps[_fromTokenId] = unlockedTimeStamps[_tokenId];
         unlockedTimeStamps[_toTokenId] = unlockedTimeStamps[_tokenId];
+
+        uint256 _toBasedTokenAmount = basedTokenAmounts[_tokenId] * _transferPercentage / 100;
+        basedTokenAmounts[_fromTokenId] = basedTokenAmounts[_tokenId] - _toBasedTokenAmount;
+        basedTokenAmounts[_toTokenId] = _toBasedTokenAmount;
+        totalBasedTokenAmount = totalBasedTokenAmount + basedTokenAmounts[_tokenId];
 
         for (uint256 index; index < investmentTargets.length; index ++) {
             (address _targetAddress,) = investmentTarget(index);
@@ -289,12 +299,23 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         flashLoanInterestRate = _newInterestRate;
     }
 
-    function setFolio() external isInitialized onlyAdmin {
+    function checkExecutable(
+        uint256[] memory _votedTokenIds
+    ) external view {
+        uint256 _totalVotedBasedAmount;
+        uint256 _totalVotedLockedTimeInterval;
 
-    }
+        for (uint256 index; index < _votedTokenIds.length; index++) {
+            uint256 _tokenId = _votedTokenIds[index];
+            _totalVotedBasedAmount = _totalVotedBasedAmount + basedTokenAmounts[_tokenId];
+            _totalVotedLockedTimeInterval = _totalVotedLockedTimeInterval + lockedTimeIntervals[_tokenId];
+        }
 
-    function rebalance() external isInitialized onlyAdmin {
-
+        uint256 _votedValue = _totalVotedBasedAmount * _totalVotedLockedTimeInterval * 10000 / (totalBasedTokenAmount * totalLockedTimeInterval);
+        require(
+            _votedValue > (proposalExectedThreshold * proposalExectedThreshold),
+            "The vote did not pass the threshold"
+        );
     }
 
     // MARK: Internal and Private Functions
@@ -375,6 +396,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         uint256 _tokenId
     ) private {
         totalLockedTimeInterval = totalLockedTimeInterval - lockedTimeIntervals[_tokenId];
+        totalBasedTokenAmount = totalBasedTokenAmount - basedTokenAmounts[_tokenId];
 
         for (uint256 index; index < investmentTargets.length; index ++) {    
             (address _targetAddress,) = investmentTarget(index);

@@ -19,6 +19,8 @@ abstract contract DecentFolioStorage {
 
     uint256 public totalSupply; //Note: Increase with mint, do not decrease with burn.
 
+    uint256 totalBasedTokenAmount;
+    mapping(uint256 totkenId => uint256) public basedTokenAmounts;
     uint256 public totalLockedTimeInterval;
     mapping(uint256 tokenId => uint256) public lockedTimeIntervals;
     mapping(uint256 tokenId => uint256) public unlockedTimeStamps;
@@ -29,6 +31,8 @@ abstract contract DecentFolioStorage {
     mapping(address targetTokenAddress => uint256) public totalProfitTokenAmounts;
 
     uint256 public flashLoanInterestRate; // Note: will be multiplied by 0.0001
+
+    uint256 proposalExectedThreshold;
 
     bool public initialized;
     bool reentrancyLocked;

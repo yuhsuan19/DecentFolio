@@ -10,15 +10,25 @@ import { DecentFolio } from "../DecentFolio/DecentFolio.sol";
 import { DecentFolioProxy } from "../DecentFolio/DecentFolioProxy.sol";
 
 contract DecentFolioManager is DecentFolioCreateChecker {
+
+    struct FlashLoanInterestRateProposal {
+        uint256 folioIndex;
+        uint256 proposedTimestamp;
+        uint256 newInterestRate;
+    }
     
     address public owner;
     address public immutable uniswapRouterAddress;
     IUniswapV2Router01 immutable uniswapRouter;
     address public immutable uniswapFactoryAddress;
     IUniswapV2Factory immutable uniswapFactory;
-
+    
     address implementationAddress;
     address[] public decentFolios;
+
+    uint256 constant votingTimeInterval = 3600;
+    FlashLoanInterestRateProposal[] interestRateProposals;
+    mapping(uint256 proposalIndex => uint256[]) interestRateVoteTokenIds;
 
     constructor(
         address _uniSwapRouterAddress,
@@ -38,7 +48,8 @@ contract DecentFolioManager is DecentFolioCreateChecker {
         address _basedTokenAddress,
         address[] memory _targetTokenAddresses,
         uint256[] memory _targetTokenPercentages,
-        uint256 _flashLoanInterestRate
+        uint256 _flashLoanInterestRate,
+        uint256 _propsalExecutedThreshold
     ) external returns (uint256 index) {
         _checkBasedTokenAndTargetTokens(
             _basedTokenAddress,
@@ -48,12 +59,13 @@ contract DecentFolioManager is DecentFolioCreateChecker {
         );
 
         bytes memory initialCallData = abi.encodeWithSignature(
-            "initialize(address,address[],uint256[],address,uint256)", 
+            "initialize(address,address[],uint256[],address,uint256,uint256)", 
             _basedTokenAddress, 
             _targetTokenAddresses, 
             _targetTokenPercentages, 
             uniswapRouterAddress,
-            _flashLoanInterestRate
+            _flashLoanInterestRate,
+            _propsalExecutedThreshold
         );
         DecentFolioProxy proxy = new DecentFolioProxy(
             implementationAddress,
@@ -76,11 +88,86 @@ contract DecentFolioManager is DecentFolioCreateChecker {
         return _decentFolioAddress;
     }
 
-    function proposeChange() external {
+    function proposeSetNewFlashLoanInterestRate(
+        uint256 _folioIndex,
+        uint256 _tokenId,
+        uint256 _newInterestRate
+    ) external {
+        DecentFolio folio = DecentFolio(decentFolios[_folioIndex]);
+        require(
+            folio.ownerOf(_tokenId) == msg.sender,
+            "Only the holders of this decentFolio can propose change"
+        );
 
+        FlashLoanInterestRateProposal memory proposl = FlashLoanInterestRateProposal(
+            _folioIndex,
+            _newInterestRate,
+            block.timestamp
+        );
+
+        interestRateProposals.push(proposl);
     }
 
-    function executeChange() external {
+    function voteSetNewFlashLoanInterestRate(
+        uint256 _proposalIndex,
+        uint256 _tokenId
+    ) external {
+        require(
+            _proposalIndex < interestRateProposals.length,
+            "Wrogn proposal index"
+        );
         
+        FlashLoanInterestRateProposal memory propsal = interestRateProposals[_proposalIndex];
+
+        require(
+            propsal.proposedTimestamp + votingTimeInterval > block.timestamp,
+            "The voting is already ended"
+        );
+
+        DecentFolio folio = DecentFolio(decentFolios[propsal.folioIndex]);
+        require(
+            folio.ownerOf(_tokenId) == msg.sender,
+            "Only the holders of this decentFolio can vote"
+        );
+        checkDoubleVote(
+            _proposalIndex, 
+            _tokenId
+        );
+        interestRateVoteTokenIds[_proposalIndex].push(_tokenId);
+    }
+
+    function executeSetNewFlashLoanInterestRat(
+        uint256 _proposalIndex
+    ) external {
+        require(
+            _proposalIndex < interestRateProposals.length,
+            "Wrogn proposal index"
+        );
+        FlashLoanInterestRateProposal memory propsal = interestRateProposals[_proposalIndex];
+        require(
+            propsal.proposedTimestamp + votingTimeInterval < block.timestamp,
+            "The proposal is still in voting"
+        );
+        DecentFolio folio = DecentFolio(decentFolios[propsal.folioIndex]);
+
+        folio.checkExecutable(interestRateVoteTokenIds[_proposalIndex]);
+
+        folio.setNewFlashLoanInterestRate(propsal.newInterestRate);
+    }
+
+    function checkDoubleVote(
+        uint256 _proposalIndex,
+        uint256 _tokenId
+    ) private view {
+        bool hasVote;
+        for (uint256 i; i < interestRateVoteTokenIds[_proposalIndex].length; i++) {
+            if (interestRateVoteTokenIds[_proposalIndex][i] == _tokenId) {
+                hasVote = true;
+            }
+        }
+        require(
+            !hasVote,
+            "This token id has already voted"
+        );
     }
 }

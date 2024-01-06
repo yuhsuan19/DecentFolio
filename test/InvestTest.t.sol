@@ -23,6 +23,7 @@ contract InvestTest is Test, AddressBook {
     address[] private targetTokenAddress = [_chainlink, _uni];
     uint256[] private targetTokenPercentage = [60, 40];
     uint256 private flashLoanInterestRate = 30;
+    uint256 private propsalExecutedThreshold = 60;
 
     DecentFolioManager decentFolioManager;
     DecentFolio decentFolio;
@@ -51,7 +52,8 @@ contract InvestTest is Test, AddressBook {
             basedTokenAddress, 
             targetTokenAddress, 
             targetTokenPercentage,
-            flashLoanInterestRate
+            flashLoanInterestRate,
+            propsalExecutedThreshold
         );
         address folioAddress = decentFolioManager.decentFolio(index);
         decentFolio = DecentFolio(folioAddress);

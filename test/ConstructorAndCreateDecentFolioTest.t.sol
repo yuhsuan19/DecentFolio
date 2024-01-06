@@ -23,6 +23,7 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
     uint256[] private wrongSumTargetTokenPercentage = [10, 20, 20, 40];
 
     uint256 private flashLoanInterestRate = 30;
+    uint256 private propsalExecutedThreshold = 60;
 
     DecentFolioManager decentFolioManager;
 
@@ -61,7 +62,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
             basedTokenAddress, 
             targetTokenAddress, 
             targetTokenPercentage,
-            flashLoanInterestRate
+            flashLoanInterestRate,
+            propsalExecutedThreshold
         );
         vm.stopPrank();        
         assertEq(index, 0);
@@ -89,7 +91,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
             mockAddress, 
             targetTokenAddress, 
             targetTokenPercentage,
-            flashLoanInterestRate
+            flashLoanInterestRate,
+            propsalExecutedThreshold
         );
         vm.stopPrank();        
     }
@@ -103,7 +106,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
             basedTokenAddress, 
             emptyAddresses, 
             targetTokenPercentage,
-            flashLoanInterestRate
+            flashLoanInterestRate,
+            propsalExecutedThreshold
         );
         vm.stopPrank();        
     }
@@ -115,7 +119,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
             basedTokenAddress, 
             targetTokenAddress, 
             wrongLengthTargetTokenPercentage,
-            flashLoanInterestRate
+            flashLoanInterestRate,
+            propsalExecutedThreshold
         );
         vm.stopPrank();
     }
@@ -127,7 +132,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
             basedTokenAddress, 
             targetTokenAddress, 
             wrongSumTargetTokenPercentage,
-            flashLoanInterestRate
+            flashLoanInterestRate,
+            propsalExecutedThreshold
         );
         vm.stopPrank();
     }
@@ -139,7 +145,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
             basedTokenAddress, 
             notERC20TargetTokenAddresses, 
             targetTokenPercentage,
-            flashLoanInterestRate
+            flashLoanInterestRate,
+            propsalExecutedThreshold
         );
         vm.stopPrank();
     }
@@ -157,7 +164,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
             basedTokenAddress, 
             notUniSwapV2PairTargetTokenAddresses, 
             targetTokenPercentage,
-            flashLoanInterestRate
+            flashLoanInterestRate,
+            propsalExecutedThreshold
         );
         vm.stopPrank();
     }
