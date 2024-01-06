@@ -17,7 +17,7 @@ abstract contract DecentFolioStorage {
     address public uniswapV2RouterAddress;
     IUniswapV2Router01 uniswapV2Router;
 
-    uint256 public totalSupply;
+    uint256 public totalSupply; //Note: Increase with mint, do not decrease with burn.
 
     uint256 public totalLockedTimeInterval;
     mapping(uint256 tokenId => uint256) public lockedTimeIntervals;
@@ -28,7 +28,10 @@ abstract contract DecentFolioStorage {
 
     mapping(address targetTokenAddress => uint256) public totalProfitTokenAmounts;
 
+    uint256 public flashLoanInterestRate; // Note: will be multiplied by 0.0001
+
     bool public initialized;
+    bool reentrancyLocked;
 
     function investmentTarget(
         uint256 index

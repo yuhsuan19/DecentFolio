@@ -22,6 +22,7 @@ contract InvestTest is Test, AddressBook {
     ERC20 private basedToken;
     address[] private targetTokenAddress = [_chainlink, _uni];
     uint256[] private targetTokenPercentage = [60, 40];
+    uint256 private flashLoanInterestRate = 30;
 
     DecentFolioManager decentFolioManager;
     DecentFolio decentFolio;
@@ -49,7 +50,8 @@ contract InvestTest is Test, AddressBook {
         uint256 index = decentFolioManager.createERC20BasedFolio(
             basedTokenAddress, 
             targetTokenAddress, 
-            targetTokenPercentage
+            targetTokenPercentage,
+            flashLoanInterestRate
         );
         address folioAddress = decentFolioManager.decentFolio(index);
         decentFolio = DecentFolio(folioAddress);

@@ -37,7 +37,8 @@ contract DecentFolioManager is DecentFolioCreateChecker {
     function createERC20BasedFolio(
         address _basedTokenAddress,
         address[] memory _targetTokenAddresses,
-        uint256[] memory _targetTokenPercentages
+        uint256[] memory _targetTokenPercentages,
+        uint256 _flashLoanInterestRate
     ) external returns (uint256 index) {
         _checkBasedTokenAndTargetTokens(
             _basedTokenAddress,
@@ -47,11 +48,12 @@ contract DecentFolioManager is DecentFolioCreateChecker {
         );
 
         bytes memory initialCallData = abi.encodeWithSignature(
-            "initialize(address,address[],uint256[],address)", 
+            "initialize(address,address[],uint256[],address,uint256)", 
             _basedTokenAddress, 
             _targetTokenAddresses, 
             _targetTokenPercentages, 
-            uniswapRouterAddress
+            uniswapRouterAddress,
+            _flashLoanInterestRate
         );
         DecentFolioProxy proxy = new DecentFolioProxy(
             implementationAddress,

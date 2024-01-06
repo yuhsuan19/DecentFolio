@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
-
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -10,6 +8,7 @@ import { IUniswapV2Router01 } from "../../lib/v2-periphery/contracts/interfaces/
 
 import { InvestmentTarget, DecentFolioStorage } from "./DecentFolioStorage.sol";
 import { AdminOnly } from "./Utilities/AdminOnly.sol";
+import { IDecentFolioFlashLoanReceiver } from "./IDecentFolioFlashLoanReceiver.sol";
 
 contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
 
@@ -19,6 +18,13 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
             "Not intialized"
         );
         _;
+    }
+
+    modifier noReentrancy() {
+        require(!reentrancyLocked, "ReentrancyGuard: reentrant call");
+        reentrancyLocked = true;
+        _;
+        reentrancyLocked = false;
     }
 
     // Note: just for deploying implemetation contract
@@ -31,7 +37,8 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         address _basedTokenAddress,
         address[] memory _targetTokenAddresses,
         uint256[] memory _targetTokenPercentages,
-        address _uniswapV2RouterAddress
+        address _uniswapV2RouterAddress,
+        uint256 _flashLoanInterestRate
     ) public {
         basedTokenAddress = _basedTokenAddress;
         basedToken = IERC20(_basedTokenAddress);
@@ -41,6 +48,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         );
         uniswapV2RouterAddress = _uniswapV2RouterAddress;
         uniswapV2Router = IUniswapV2Router01(uniswapV2RouterAddress);
+        flashLoanInterestRate = _flashLoanInterestRate;
 
         initialized = true;
     }
@@ -79,7 +87,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
          uint256 _tokenId,
          uint256 _transferPercentage, 
          address _to
-    ) external returns (uint256 fromTokenId, uint256 toTokenId) {
+    ) external isInitialized returns (uint256 fromTokenId, uint256 toTokenId) {
 
         uint256 _fromTokenId = totalSupply;
         uint256 _toTokenId = totalSupply + 1;
@@ -117,29 +125,74 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         return(_fromTokenId, _toTokenId);
     }
 
-    function burn(
+    function redeem(
         uint256 _tokenId
-    ) private {
-        totalLockedTimeInterval = totalLockedTimeInterval - lockedTimeIntervals[_tokenId];
+    ) external isInitialized {
+    }
 
+    function earlyRedemm(
+        uint256 _tokenId
+    ) external isInitialized {
+
+    }
+
+    function flashLoan(
+        address _borrowTokenAddress,
+        uint256 _borrowAmount,
+        address _borrowTo,
+        bytes32 _payload
+    ) external isInitialized noReentrancy {
+        checkIsTargetToken(_borrowTokenAddress);
+        
+        uint256 _balanceBeforeLending = IERC20(_borrowTokenAddress).balanceOf(address(this));
+        require(
+            _borrowAmount > 10_000,
+            "The borrow amount cannot be less than 10_000"
+        );
+        require(
+            _balanceBeforeLending >= _borrowAmount,
+            "Insufficeient balance"
+        );
+
+        IERC20(_borrowTokenAddress).transfer(
+            _borrowTo, 
+            _borrowAmount
+        );
+        uint256 _interest = _borrowAmount * flashLoanInterestRate / 10_000;
+
+        IDecentFolioFlashLoanReceiver(_borrowTo).executeOperation(
+            _borrowTokenAddress, 
+            _borrowAmount, 
+            _interest, 
+            msg.sender, 
+            _payload
+        );
+
+        uint256 _balanceAfterLending = IERC20(_borrowTokenAddress).balanceOf(address(this));
+        require(
+            _balanceAfterLending >= _balanceBeforeLending + _interest,
+            "Insufficeient repay amount"
+        );
+    }
+
+    function resolveBalances() external isInitialized {
         for (uint256 index; index < investmentTargets.length; index ++) {    
             (address _targetAddress,) = investmentTarget(index);
-            uint256 _investAmount = investTokenAmounts[_tokenId][_targetAddress];
-
-            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] - _investAmount;
+            resolveBalance(_targetAddress);
         }
-
-        _burn(_tokenId);
     }
 
-    function flashLoan() external isInitialized {
-
+    function resolveBalance(
+        address _tokenAddress
+    ) public isInitialized {
+        checkIsTargetToken(_tokenAddress);
+        
+        uint256 _realBalance = IERC20(_tokenAddress).balanceOf(address(this));
+        uint256 _investAmount = totalInvestTokenAmounts[_tokenAddress];
+        totalProfitTokenAmounts[_tokenAddress] = _realBalance - _investAmount;
     }
 
-    function syncBalances() external {
-
-    }
-
+    // MARK: Internal and Private Functions
     function initializeInvestmentTargets(
         address[] memory _targetTokenAddresses,
         uint256[] memory _targetTokenPercentages
@@ -194,5 +247,37 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
             totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] + _swapAmounts[1];
             investTokenAmounts[_tokenId][_targetAddress] = _swapAmounts[1];
         }
+    }
+
+    function checkIsTargetToken(
+        address _tokenAddress
+    ) view private {
+        bool isTargetToken;
+        for (uint256 index; index < investmentTargets.length; index ++) {
+            (address _targetAddress,) = investmentTarget(index);
+            if (_targetAddress == _tokenAddress) {
+                isTargetToken = true;
+            }
+        }
+
+        require(
+            isTargetToken,
+            "The input token is not one of the target tokens"
+        );
+    }
+
+    function burn(
+        uint256 _tokenId
+    ) private {
+        totalLockedTimeInterval = totalLockedTimeInterval - lockedTimeIntervals[_tokenId];
+
+        for (uint256 index; index < investmentTargets.length; index ++) {    
+            (address _targetAddress,) = investmentTarget(index);
+            uint256 _investAmount = investTokenAmounts[_tokenId][_targetAddress];
+
+            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] - _investAmount;
+        }
+
+        _burn(_tokenId);
     }
 }

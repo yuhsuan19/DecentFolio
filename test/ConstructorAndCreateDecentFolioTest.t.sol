@@ -22,6 +22,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
     uint256[] private wrongLengthTargetTokenPercentage = [10, 10, 10, 30, 40];
     uint256[] private wrongSumTargetTokenPercentage = [10, 20, 20, 40];
 
+    uint256 private flashLoanInterestRate = 30;
+
     DecentFolioManager decentFolioManager;
 
     function setUp() public {
@@ -58,7 +60,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
         uint256 index = decentFolioManager.createERC20BasedFolio(
             basedTokenAddress, 
             targetTokenAddress, 
-            targetTokenPercentage
+            targetTokenPercentage,
+            flashLoanInterestRate
         );
         vm.stopPrank();        
         assertEq(index, 0);
@@ -85,7 +88,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
         decentFolioManager.createERC20BasedFolio(
             mockAddress, 
             targetTokenAddress, 
-            targetTokenPercentage
+            targetTokenPercentage,
+            flashLoanInterestRate
         );
         vm.stopPrank();        
     }
@@ -98,7 +102,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
         decentFolioManager.createERC20BasedFolio(
             basedTokenAddress, 
             emptyAddresses, 
-            targetTokenPercentage
+            targetTokenPercentage,
+            flashLoanInterestRate
         );
         vm.stopPrank();        
     }
@@ -109,7 +114,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
         decentFolioManager.createERC20BasedFolio(
             basedTokenAddress, 
             targetTokenAddress, 
-            wrongLengthTargetTokenPercentage
+            wrongLengthTargetTokenPercentage,
+            flashLoanInterestRate
         );
         vm.stopPrank();
     }
@@ -120,7 +126,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
         decentFolioManager.createERC20BasedFolio(
             basedTokenAddress, 
             targetTokenAddress, 
-            wrongSumTargetTokenPercentage
+            wrongSumTargetTokenPercentage,
+            flashLoanInterestRate
         );
         vm.stopPrank();
     }
@@ -131,7 +138,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
         decentFolioManager.createERC20BasedFolio(
             basedTokenAddress, 
             notERC20TargetTokenAddresses, 
-            targetTokenPercentage
+            targetTokenPercentage,
+            flashLoanInterestRate
         );
         vm.stopPrank();
     }
@@ -148,7 +156,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
         decentFolioManager.createERC20BasedFolio(
             basedTokenAddress, 
             notUniSwapV2PairTargetTokenAddresses, 
-            targetTokenPercentage
+            targetTokenPercentage,
+            flashLoanInterestRate
         );
         vm.stopPrank();
     }
