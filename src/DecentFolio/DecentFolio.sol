@@ -126,14 +126,105 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
     }
 
     function redeem(
-        uint256 _tokenId
+        uint256 _tokenId,
+        address _receiver
     ) external isInitialized {
+        require(
+            ownerOf(_tokenId) == msg.sender,
+            "The owner of the token id is not the msg.sneder"
+        );
+        require(
+              unlockedTimeStamps[_tokenId] < block.timestamp,
+              "This token is still under locked status"
+        );
+        resolveBalances();
+
+        uint256 redeemBasedTokenAmount;
+        for (uint256 index; index < investmentTargets.length; index ++) {    
+            (address _targetAddress,) = investmentTarget(index);
+            uint256 _balBeforeSwap = basedToken.balanceOf(address(this));
+
+            uint256 _profit = profitAmount(
+                _tokenId, 
+                _targetAddress
+            );
+            totalProfitTokenAmounts[_targetAddress] = totalProfitTokenAmounts[_targetAddress] - _profit;
+
+            uint256 _amountIn = investTokenAmounts[_tokenId][_targetAddress] + _profit;
+            IERC20(_targetAddress).approve(
+                uniswapV2RouterAddress, 
+                _amountIn
+            );
+
+            address[] memory _path = new address[](2);
+            _path[0] = _targetAddress;
+            _path[1] = basedTokenAddress;
+            uint256[] memory _swapAmounts = uniswapV2Router.swapExactTokensForTokens(
+                _amountIn, 
+                0, 
+                _path, 
+                address(this), 
+                block.timestamp
+            );
+            uint256 _balAfterSwap = basedToken.balanceOf(address(this));
+            require(
+                (_balAfterSwap == _balBeforeSwap + _swapAmounts[1]), 
+                "Fail to swap"
+            );
+            redeemBasedTokenAmount = redeemBasedTokenAmount + _swapAmounts[1];
+
+        }
+        burn(_tokenId);
+        basedToken.transfer(
+            _receiver, 
+            redeemBasedTokenAmount
+        );
     }
 
+    // Note: the investors who want to redeem before the unlocked time have to give up the profit
     function earlyRedemm(
-        uint256 _tokenId
+        uint256 _tokenId,
+        address _receiver
     ) external isInitialized {
+        require(
+            ownerOf(_tokenId) == msg.sender,
+            "The owner of the token id is not the msg.sneder"
+        );
+        uint256 redeemBasedTokenAmount;
 
+        for (uint256 index; index < investmentTargets.length; index ++) {    
+            (address _targetAddress,) = investmentTarget(index);
+            uint256 _balBeforeSwap = basedToken.balanceOf(address(this));
+
+            uint256 _amountIn = investTokenAmounts[_tokenId][_targetAddress];
+            IERC20(_targetAddress).approve(
+                uniswapV2RouterAddress, 
+                _amountIn
+            );
+
+            address[] memory _path = new address[](2);
+            _path[0] = _targetAddress;
+            _path[1] = basedTokenAddress;
+            uint256[] memory _swapAmounts = uniswapV2Router.swapExactTokensForTokens(
+                _amountIn, 
+                0, 
+                _path, 
+                address(this), 
+                block.timestamp
+            );
+            uint256 _balAfterSwap = basedToken.balanceOf(address(this));
+            require(
+                (_balAfterSwap == _balBeforeSwap + _swapAmounts[1]), 
+                "Fail to swap"
+            );
+            redeemBasedTokenAmount = redeemBasedTokenAmount + _swapAmounts[1];
+        }
+
+        burn(_tokenId);
+        basedToken.transfer(
+            _receiver, 
+            redeemBasedTokenAmount
+        );
     }
 
     function flashLoan(
@@ -175,7 +266,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         );
     }
 
-    function resolveBalances() external isInitialized {
+    function resolveBalances() public isInitialized {
         for (uint256 index; index < investmentTargets.length; index ++) {    
             (address _targetAddress,) = investmentTarget(index);
             resolveBalance(_targetAddress);
@@ -190,6 +281,20 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         uint256 _realBalance = IERC20(_tokenAddress).balanceOf(address(this));
         uint256 _investAmount = totalInvestTokenAmounts[_tokenAddress];
         totalProfitTokenAmounts[_tokenAddress] = _realBalance - _investAmount;
+    }
+
+    function setNewFlashLoanInterestRate(
+        uint256 _newInterestRate
+    ) external isInitialized onlyAdmin {
+        flashLoanInterestRate = _newInterestRate;
+    }
+
+    function setFolio() external isInitialized onlyAdmin {
+
+    }
+
+    function rebalance() external isInitialized onlyAdmin {
+
     }
 
     // MARK: Internal and Private Functions
@@ -279,5 +384,18 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         }
 
         _burn(_tokenId);
+    }
+
+     function profitAmount(
+        uint256 _tokenId, 
+        address _tokenAddress
+    ) private view returns (uint256 amount) {
+        uint256 _lockedTimeInterval = lockedTimeIntervals[_tokenId];
+        uint256 _investAmount = investTokenAmounts[_tokenId][_tokenAddress];
+
+        uint256 _totalInvestAmount = totalInvestTokenAmounts[_tokenAddress];
+
+        uint256 _profitAmount = (totalProfitTokenAmounts[_tokenAddress] * _lockedTimeInterval * _investAmount) / (_totalInvestAmount * totalLockedTimeInterval);
+        return _profitAmount;
     }
 }

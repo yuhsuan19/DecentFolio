@@ -75,4 +75,12 @@ contract DecentFolioManager is DecentFolioCreateChecker {
         address _decentFolioAddress = decentFolios[_index];
         return _decentFolioAddress;
     }
+
+    function proposeChange() external {
+
+    }
+
+    function executeChange() external {
+        
+    }
 }

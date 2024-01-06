@@ -39,7 +39,7 @@ contract DecentFolioProxy is AdminOnly {
             success, 
             "Fail to intialize DecentFolio"
         );
-  }
+    }
     
     function implementation() public view returns (address impl) {
         return _getSlotToAddress(ImpletationSlot);
