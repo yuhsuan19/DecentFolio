@@ -79,8 +79,8 @@ contract InvestTest is Test, AddressBook {
             86_400
         );
         vm.stopPrank();
+        
         uint256 _totalSupplayAfter = decentFolio.totalSupply();
-
         assertEq(_totalSupplayAfter - _totalSupplayBefore, 1);
         assertEq(_tokenId, _totalSupplayBefore);
         assertEq(decentFolio.ownerOf(_tokenId), investor);
@@ -119,6 +119,92 @@ contract InvestTest is Test, AddressBook {
         assertEq(
             decentFolio.investTokenAmountOf(_tokenId, _uni),
             61716919825985996376
+        );
+    }
+
+    function test_FragAndTransfer() public {
+        address receiver = makeAddr("receiver");
+
+        vm.startPrank(investor);
+        basedToken.approve(
+            address(decentFolio), 
+            1000 * 10 ** basedToken.decimals()
+        );
+        uint256 _tokenId = decentFolio.inveset(
+            1000 * 10 ** basedToken.decimals(),
+            86_400
+        );
+        
+        uint256 _linkInvestAmount = decentFolio.investTokenAmountOf(_tokenId, _chainlink);
+        uint256 _uniInvestAmount = decentFolio.investTokenAmountOf(_tokenId, _uni);
+        uint256 _lockedTimeInterval = decentFolio.lockedTimeIntervalOf(_tokenId);
+        uint256 _unlockedTimestamp = decentFolio.unlockedTimeStampOf(_tokenId);
+
+        uint256 _totalLinkInvestAmountBefore = decentFolio.totalInvestTokenAmountOf(_chainlink);
+        uint256 _totalUniInvestAmoutnBefore = decentFolio.totalInvestTokenAmountOf(_uni);
+
+        uint256 _totalLockedTimeIntervalBefore = decentFolio.totalLockedTimeInterval();
+
+        (uint256 _newTokenId, uint256 _receiverTokenId) = decentFolio.fragAndTransfer(
+            _tokenId, 
+            30, 
+            receiver
+        );
+        vm.stopPrank();
+
+        assertEq(decentFolio.ownerOf(_newTokenId), investor);
+        assertEq(decentFolio.ownerOf(_receiverTokenId), address(receiver));
+        
+        {
+            uint256 _linkInvestAmountAfter = decentFolio.investTokenAmountOf(_newTokenId, _chainlink);
+            uint256 _uniInvestAmountAfter = decentFolio.investTokenAmountOf(_newTokenId, _uni);
+            uint256 _receiverLinkInvestAmount = decentFolio.investTokenAmountOf(_receiverTokenId, _chainlink);
+            uint256 _receiverUniInvestAmount = decentFolio.investTokenAmountOf(_receiverTokenId, _uni);
+
+            assertEq(_receiverLinkInvestAmount, _linkInvestAmount * 30 / 100 );
+            assertEq(_receiverUniInvestAmount, _uniInvestAmount * 30 / 100 );
+            assertEq(_linkInvestAmount, _linkInvestAmountAfter + _receiverLinkInvestAmount);
+            assertEq(_uniInvestAmount, _uniInvestAmountAfter + _receiverUniInvestAmount);
+
+            assertEq(decentFolio.lockedTimeIntervalOf(_newTokenId), _lockedTimeInterval);
+            assertEq(decentFolio.lockedTimeIntervalOf(_receiverTokenId), _lockedTimeInterval);
+            assertEq(decentFolio.unlockedTimeStampOf(_newTokenId), _unlockedTimestamp);
+            assertEq(decentFolio.unlockedTimeStampOf(_receiverTokenId), _unlockedTimestamp);
+        }
+        {
+            uint256 _totalLinkInvestAmountAfter = decentFolio.totalInvestTokenAmountOf(_chainlink);
+            uint256 _totalUniInvestAmoutnAfter = decentFolio.totalInvestTokenAmountOf(_uni);
+            assertEq(_totalLinkInvestAmountAfter, _totalLinkInvestAmountBefore);
+            assertEq(_totalUniInvestAmoutnAfter, _totalUniInvestAmoutnBefore);
+        }
+        {
+            uint256 _totalLockedTimeIntervalAfter = decentFolio.totalLockedTimeInterval();
+            assertEq(_totalLockedTimeIntervalAfter, _totalLockedTimeIntervalBefore + _lockedTimeInterval);
+        }
+        // Check the original one be burned
+        vm.expectRevert();
+        decentFolio.ownerOf(_tokenId);
+    }
+
+    function test_FragAndTransfer_notTokenOwner() public {
+         address receiver = makeAddr("receiver");
+
+        vm.startPrank(investor);
+        basedToken.approve(
+            address(decentFolio), 
+            1000 * 10 ** basedToken.decimals()
+        );
+        uint256 _tokenId = decentFolio.inveset(
+            1000 * 10 ** basedToken.decimals(),
+            86_400
+        );
+        vm.stopPrank();
+
+        vm.expectRevert("The msg.sender is not the owner of token id");
+        decentFolio.fragAndTransfer(
+            _tokenId, 
+            30, 
+            receiver
         );
     }
 

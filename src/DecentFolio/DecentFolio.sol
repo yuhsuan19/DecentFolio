@@ -93,6 +93,10 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
          uint256 _transferPercentage, 
          address _to
     ) external isInitialized returns (uint256 fromTokenId, uint256 toTokenId) {
+        require(
+            ownerOf(_tokenId) == msg.sender,
+            "The msg.sender is not the owner of token id"
+        );
 
         uint256 _fromTokenId = totalSupply;
         uint256 _toTokenId = totalSupply + 1;
