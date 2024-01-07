@@ -12,7 +12,7 @@ import { IUniswapV2Pair } from"../lib/v2-core/contracts/interfaces/IUniswapV2Pai
 import { DecentFolio } from "../src/DecentFolio/DecentFolio.sol";
 import { DecentFolioManager } from "../src/DecentFolioManager/DecentFolioManager.sol";
 
-contract InvestTest is Test, AddressBook {
+contract InvestAndRedeemTest is Test, AddressBook {
 
     address private owner;
     address private investor;
