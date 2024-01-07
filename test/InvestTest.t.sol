@@ -268,6 +268,98 @@ contract InvestTest is Test, AddressBook {
         );
     }
 
+    function test_Redeem() public {
+        address richMan = makeAddr("richMan");
+        deal(
+            _chainlink, 
+            richMan, 
+            100 * 10 ** ERC20(_chainlink).decimals()
+        );
+        address receiver = makeAddr("receiver");
+        
+        vm.startPrank(investor);
+        basedToken.approve(
+            address(decentFolio), 
+            1000 * 10 ** basedToken.decimals()
+        );
+        uint256 _tokenId = decentFolio.inveset(
+            1000 * 10 ** basedToken.decimals(),
+            86_400
+        );
+        vm.stopPrank();
+        
+        vm.startPrank(richMan);
+        ERC20(_chainlink).transfer(
+            address(decentFolio), 
+            100 * 10 ** ERC20(_chainlink).decimals()
+        );
+        vm.stopPrank();
+
+        uint256 _totalLinkInvestAmountBefore = decentFolio.totalInvestTokenAmountOf(_chainlink);
+        uint256 _totalUniInvestAmoutnBefore = decentFolio.totalInvestTokenAmountOf(_uni);
+        uint256 _totalLockedTimeIntervalBefore = decentFolio.totalLockedTimeInterval();
+
+        uint256 _linkInvestAmount = decentFolio.investTokenAmountOf(_tokenId, _chainlink);
+        uint256 _uniInvestAmount = decentFolio.investTokenAmountOf(_tokenId, _uni);
+        uint256 _lockedTimeInterval = decentFolio.lockedTimeIntervalOf(_tokenId);
+
+        vm.startPrank(investor);
+        vm.warp(block.timestamp + 86_401);
+        decentFolio.redeem(
+            _tokenId, 
+            receiver
+        );
+        vm.stopPrank();
+
+        assertEq(basedToken.balanceOf(receiver), 2392355919);
+
+        uint256 _totalLinkInvestAmountAfter = decentFolio.totalInvestTokenAmountOf(_chainlink);
+        uint256 _totalUniInvestAmoutnAfter = decentFolio.totalInvestTokenAmountOf(_uni);
+        uint256 _totalLockedTimeIntervalAfter = decentFolio.totalLockedTimeInterval();
+        assertEq(_totalLinkInvestAmountAfter, _totalLinkInvestAmountBefore - _linkInvestAmount);
+        assertEq(_totalUniInvestAmoutnAfter, _totalUniInvestAmoutnBefore - _uniInvestAmount);
+        assertEq(_totalLockedTimeIntervalAfter, _totalLockedTimeIntervalBefore - _lockedTimeInterval);
+    }
+
+    function test_Redeem_notUnlocked() public {
+        address receiver = makeAddr("receiver");
+        vm.startPrank(investor);
+        basedToken.approve(
+            address(decentFolio), 
+            1000 * 10 ** basedToken.decimals()
+        );
+        uint256 _tokenId = decentFolio.inveset(
+            1000 * 10 ** basedToken.decimals(),
+            86_400
+        );
+        vm.expectRevert("This token is still under locked status");
+        decentFolio.redeem(
+            _tokenId, 
+            receiver
+        );
+        vm.stopPrank();
+    }
+
+    function test_Redeem_notTokenOwner() public {
+        address receiver = makeAddr("receiver");
+        vm.startPrank(investor);
+        basedToken.approve(
+            address(decentFolio), 
+            1000 * 10 ** basedToken.decimals()
+        );
+        uint256 _tokenId = decentFolio.inveset(
+            1000 * 10 ** basedToken.decimals(),
+            86_400
+        );
+        vm.stopPrank();
+
+        vm.expectRevert("The msg.sender is not the owner of token id");
+        decentFolio.redeem(
+            _tokenId, 
+            receiver
+        );
+    }
+
     function addLiquidities() private {
         IUniswapV2Router01 router = IUniswapV2Router01(_uniswapV2Router);
         deal(maker, 1_000 ether);
