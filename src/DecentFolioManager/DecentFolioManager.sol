@@ -13,8 +13,8 @@ contract DecentFolioManager is DecentFolioCreateChecker {
 
     struct FlashLoanInterestRateProposal {
         uint256 folioIndex;
-        uint256 proposedTimestamp;
         uint256 newInterestRate;
+        uint256 proposedTimestamp;
     }
     
     address public owner;
@@ -27,8 +27,8 @@ contract DecentFolioManager is DecentFolioCreateChecker {
     address[] public decentFolios;
 
     uint256 constant votingTimeInterval = 3600;
-    FlashLoanInterestRateProposal[] interestRateProposals;
-    mapping(uint256 proposalIndex => uint256[]) interestRateVoteTokenIds;
+    FlashLoanInterestRateProposal[] public interestRateProposals;
+    mapping(uint256 proposalIndex => uint256[]) public interestRateVoteTokenIds;
 
     constructor(
         address _uniSwapRouterAddress,
@@ -92,7 +92,7 @@ contract DecentFolioManager is DecentFolioCreateChecker {
         uint256 _folioIndex,
         uint256 _tokenId,
         uint256 _newInterestRate
-    ) external {
+    ) external returns (uint256 index) {
         DecentFolio folio = DecentFolio(decentFolios[_folioIndex]);
         require(
             folio.ownerOf(_tokenId) == msg.sender,
@@ -104,8 +104,20 @@ contract DecentFolioManager is DecentFolioCreateChecker {
             _newInterestRate,
             block.timestamp
         );
-
+        uint256 _index = interestRateProposals.length;
         interestRateProposals.push(proposl);
+        return _index;
+    }
+
+    function newFlashLoanInterestRateProposalOf(
+        uint256 index
+    ) external view returns (uint256 folioIndex, uint256 newInterestRate, uint256 proposedTimestamp) {
+        FlashLoanInterestRateProposal memory proposl = interestRateProposals[index];
+        return (
+            proposl.folioIndex, 
+            proposl.newInterestRate, 
+            proposl.proposedTimestamp
+        );
     }
 
     function voteSetNewFlashLoanInterestRate(
@@ -136,7 +148,7 @@ contract DecentFolioManager is DecentFolioCreateChecker {
         interestRateVoteTokenIds[_proposalIndex].push(_tokenId);
     }
 
-    function executeSetNewFlashLoanInterestRat(
+    function executeSetNewFlashLoanInterestRate(
         uint256 _proposalIndex
     ) external {
         require(
