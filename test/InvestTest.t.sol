@@ -187,7 +187,7 @@ contract InvestTest is Test, AddressBook {
     }
 
     function test_FragAndTransfer_notTokenOwner() public {
-         address receiver = makeAddr("receiver");
+        address receiver = makeAddr("receiver");
 
         vm.startPrank(investor);
         basedToken.approve(
@@ -204,6 +204,66 @@ contract InvestTest is Test, AddressBook {
         decentFolio.fragAndTransfer(
             _tokenId, 
             30, 
+            receiver
+        );
+    }
+
+    function test_EarlyRedeem() public {
+        address receiver = makeAddr("receiver");
+        vm.startPrank(investor);
+        basedToken.approve(
+            address(decentFolio), 
+            1000 * 10 ** basedToken.decimals()
+        );
+        uint256 _tokenId = decentFolio.inveset(
+            1000 * 10 ** basedToken.decimals(),
+            86_400
+        );
+
+        uint256 _totalLinkInvestAmountBefore = decentFolio.totalInvestTokenAmountOf(_chainlink);
+        uint256 _totalUniInvestAmoutnBefore = decentFolio.totalInvestTokenAmountOf(_uni);
+        uint256 _totalLockedTimeIntervalBefore = decentFolio.totalLockedTimeInterval();
+
+        uint256 _linkInvestAmount = decentFolio.investTokenAmountOf(_tokenId, _chainlink);
+        uint256 _uniInvestAmount = decentFolio.investTokenAmountOf(_tokenId, _uni);
+        uint256 _lockedTimeInterval = decentFolio.lockedTimeIntervalOf(_tokenId);
+
+        decentFolio.earlyRedeem(
+            _tokenId, 
+            receiver
+        );
+        vm.stopPrank();
+
+        assertEq(basedToken.balanceOf(receiver), 994009002);
+
+        uint256 _totalLinkInvestAmountAfter = decentFolio.totalInvestTokenAmountOf(_chainlink);
+        uint256 _totalUniInvestAmoutnAfter = decentFolio.totalInvestTokenAmountOf(_uni);
+        uint256 _totalLockedTimeIntervalAfter = decentFolio.totalLockedTimeInterval();
+        assertEq(_totalLinkInvestAmountAfter, _totalLinkInvestAmountBefore - _linkInvestAmount);
+        assertEq(_totalUniInvestAmoutnAfter, _totalUniInvestAmoutnBefore - _uniInvestAmount);
+        assertEq(_totalLockedTimeIntervalAfter, _totalLockedTimeIntervalBefore - _lockedTimeInterval);
+
+        // Check the original one be burned
+        vm.expectRevert();
+        decentFolio.ownerOf(_tokenId);
+    }
+
+    function test_EarlyRedeem_notTokenOwner() public {
+        address receiver = makeAddr("receiver");
+        vm.startPrank(investor);
+        basedToken.approve(
+            address(decentFolio), 
+            1000 * 10 ** basedToken.decimals()
+        );
+        uint256 _tokenId = decentFolio.inveset(
+            1000 * 10 ** basedToken.decimals(),
+            86_400
+        );
+        vm.stopPrank();
+
+        vm.expectRevert("The msg.sender is not the owner of token id");
+        decentFolio.earlyRedeem(
+            _tokenId, 
             receiver
         );
     }

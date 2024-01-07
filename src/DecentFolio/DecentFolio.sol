@@ -148,7 +148,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
     ) external isInitialized {
         require(
             ownerOf(_tokenId) == msg.sender,
-            "The owner of the token id is not the msg.sneder"
+            "The msg.sender is not the owner of token id"
         );
         require(
               unlockedTimeStamps[_tokenId] < block.timestamp,
@@ -199,13 +199,13 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
     }
 
     // Note: the investors who want to redeem before the unlocked time have to give up the profit
-    function earlyRedemm(
+    function earlyRedeem(
         uint256 _tokenId,
         address _receiver
     ) external isInitialized {
         require(
             ownerOf(_tokenId) == msg.sender,
-            "The owner of the token id is not the msg.sneder"
+            "The msg.sender is not the owner of token id"
         );
         uint256 redeemBasedTokenAmount;
 
@@ -323,7 +323,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         uint256 _votedValue = _totalVotedBasedAmount * _totalVotedLockedTimeInterval * 10000 / (totalBasedTokenAmount * totalLockedTimeInterval);
         require(
             _votedValue > (proposalExectedThreshold * proposalExectedThreshold),
-            "The vote did not pass the threshold"
+            "The vote result did not pass the threshold"
         );
     }
 
@@ -430,7 +430,23 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
 
         uint256 _totalInvestAmount = totalInvestTokenAmountOf(_tokenAddress);
 
-        uint256 _profitAmount = (totalProfitTokenAmountOf(_tokenAddress) * _lockedTimeInterval * _investAmount) / (_totalInvestAmount * totalLockedTimeInterval);
+        uint256 _ratio = sqrt(_lockedTimeInterval * _investAmount);
+        uint256 _total = sqrt(_totalInvestAmount * totalLockedTimeInterval);
+
+        uint256 _profitAmount = (totalProfitTokenAmountOf(_tokenAddress) * _ratio) / _total;
         return _profitAmount;
+    }
+
+    function sqrt(
+        uint256 x
+    ) private pure returns (uint256) {
+        if (x == 0) return 0;
+        uint256 z = (x + 1) / 2;
+        uint256 y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+        return y;
     }
 }
