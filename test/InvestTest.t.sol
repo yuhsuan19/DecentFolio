@@ -29,7 +29,7 @@ contract InvestTest is Test, AddressBook {
     DecentFolio decentFolio;
 
     function setUp() public {
-        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), 18952963);
 
         basedToken = ERC20(basedTokenAddress);
         owner = makeAddr("owner");
@@ -60,6 +60,15 @@ contract InvestTest is Test, AddressBook {
     }
 
     function test_Invest() public {
+        uint256 _totalSupplayBefore = decentFolio.totalSupply();
+        uint256 _totalBasedTokenAmountBefore = decentFolio.totalBasedTokenAmount();
+        uint256 _totalLockedTimeIntervalBefore = decentFolio.totalLockedTimeInterval();
+
+        uint256 _balanceOfLinkBefore = ERC20(_chainlink).balanceOf(address(decentFolio));
+        uint256 _balanceOfUniBefore = ERC20(_uni).balanceOf(address(decentFolio));
+        uint256 _totalLinkInvestAmountBefore = decentFolio.totalInvestTokenAmountOf(_chainlink);
+        uint256 _totalUniInvestAmoutnBefore = decentFolio.totalInvestTokenAmountOf(_uni);
+        
         vm.startPrank(investor);
         basedToken.approve(
             address(decentFolio), 
@@ -67,22 +76,50 @@ contract InvestTest is Test, AddressBook {
         );
         uint256 _tokenId = decentFolio.inveset(
             1000 * 10 ** basedToken.decimals(),
-            0
+            86_400
         );
         vm.stopPrank();
+        uint256 _totalSupplayAfter = decentFolio.totalSupply();
 
-        assertEq(_tokenId, 0);
+        assertEq(_totalSupplayAfter - _totalSupplayBefore, 1);
+        assertEq(_tokenId, _totalSupplayBefore);
         assertEq(decentFolio.ownerOf(_tokenId), investor);
+        
+        uint256 _totalBasedTokenAmountAfter = decentFolio.totalBasedTokenAmount();
+        assertEq(
+            _totalBasedTokenAmountAfter - _totalBasedTokenAmountBefore, 
+            1000 * 10 ** basedToken.decimals()
+        );
+        assertEq(decentFolio.basedTokenAmountOf(_tokenId), 1000 * 10 ** basedToken.decimals());
 
-        for (uint256 i; i < targetTokenAddress.length; i++) {
-            address _targetTokenAddress = targetTokenAddress[i];
-            ERC20 _targetToken = ERC20(_targetTokenAddress);
-            console2.log(_targetTokenAddress);
-            console2.log(
-                _targetToken.balanceOf(address(decentFolio)) /
-                10 ** _targetToken.decimals()
-            );
-        }
+        uint256 _totalLockedTimeIntervalAfter = decentFolio.totalLockedTimeInterval();
+        assertEq(
+            _totalLockedTimeIntervalAfter - _totalLockedTimeIntervalBefore,
+            86_400
+        );
+        assertEq(decentFolio.lockedTimeIntervalOf(_tokenId), 86_400);
+        assertEq(
+            decentFolio.unlockedTimeStampOf(_tokenId),
+            block.timestamp + 86_400
+        );
+
+        uint256 _balanceOfLinkAfter = ERC20(_chainlink).balanceOf(address(decentFolio));
+        uint256 _balanceOfUniAfter = ERC20(_uni).balanceOf(address(decentFolio));
+        uint256 _totalLinkInvestAmountAfter = decentFolio.totalInvestTokenAmountOf(_chainlink);
+        uint256 _totalUniInvestAmoutnAfter = decentFolio.totalInvestTokenAmountOf(_uni);
+
+        assertEq(_balanceOfLinkAfter - _balanceOfLinkBefore, 42650661641421917908);
+        assertEq(_balanceOfUniAfter - _balanceOfUniBefore, 61716919825985996376);
+        assertEq(_totalLinkInvestAmountAfter - _totalLinkInvestAmountBefore, 42650661641421917908);
+        assertEq(_totalUniInvestAmoutnAfter - _totalUniInvestAmoutnBefore, 61716919825985996376);
+        assertEq(
+            decentFolio.investTokenAmountOf(_tokenId, _chainlink),
+            42650661641421917908
+        );
+        assertEq(
+            decentFolio.investTokenAmountOf(_tokenId, _uni),
+            61716919825985996376
+        );
     }
 
     function addLiquidities() private {

@@ -98,26 +98,29 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         uint256 _toTokenId = totalSupply + 1;
         totalSupply = totalSupply + 2;
 
-        totalLockedTimeInterval = totalLockedTimeInterval + (lockedTimeIntervals[_tokenId] * 2);
-        lockedTimeIntervals[_fromTokenId] = lockedTimeIntervals[_tokenId];
-        lockedTimeIntervals[_toTokenId] = lockedTimeIntervals[_tokenId];
+        totalLockedTimeInterval = totalLockedTimeInterval + (lockedTimeIntervalOf(_tokenId) * 2);
+        lockedTimeIntervals[_fromTokenId] = lockedTimeIntervalOf(_tokenId);
+        lockedTimeIntervals[_toTokenId] = lockedTimeIntervalOf(_tokenId);
 
-        unlockedTimeStamps[_fromTokenId] = unlockedTimeStamps[_tokenId];
-        unlockedTimeStamps[_toTokenId] = unlockedTimeStamps[_tokenId];
+        unlockedTimeStamps[_fromTokenId] = unlockedTimeStampOf(_tokenId);
+        unlockedTimeStamps[_toTokenId] = unlockedTimeStampOf(_tokenId);
 
-        uint256 _toBasedTokenAmount = basedTokenAmounts[_tokenId] * _transferPercentage / 100;
-        basedTokenAmounts[_fromTokenId] = basedTokenAmounts[_tokenId] - _toBasedTokenAmount;
+        uint256 _toBasedTokenAmount = basedTokenAmountOf(_tokenId) * _transferPercentage / 100;
+        basedTokenAmounts[_fromTokenId] = basedTokenAmountOf(_tokenId) - _toBasedTokenAmount;
         basedTokenAmounts[_toTokenId] = _toBasedTokenAmount;
-        totalBasedTokenAmount = totalBasedTokenAmount + basedTokenAmounts[_tokenId];
+        totalBasedTokenAmount = totalBasedTokenAmount + basedTokenAmountOf(_tokenId);
 
         for (uint256 index; index < investmentTargets.length; index ++) {
             (address _targetAddress,) = investmentTarget(index);
-            uint256 _investAmount = investTokenAmounts[_tokenId][_targetAddress];
+            uint256 _investAmount = investTokenAmountOf(
+                _tokenId, 
+                _targetAddress
+            );
 
             uint256 _toAmount = _investAmount * _transferPercentage / 100;
             uint256 _fromAmount = _investAmount - _toAmount;
 
-            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] + _toAmount + _fromAmount;
+            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmountOf(_targetAddress) + _toAmount + _fromAmount;
             investTokenAmounts[_toTokenId][_targetAddress] = _toAmount;
             investTokenAmounts[_fromTokenId][_targetAddress] = _fromAmount;
         }
@@ -158,9 +161,9 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
                 _tokenId, 
                 _targetAddress
             );
-            totalProfitTokenAmounts[_targetAddress] = totalProfitTokenAmounts[_targetAddress] - _profit;
+            totalProfitTokenAmounts[_targetAddress] = totalProfitTokenAmountOf(_targetAddress) - _profit;
 
-            uint256 _amountIn = investTokenAmounts[_tokenId][_targetAddress] + _profit;
+            uint256 _amountIn = investTokenAmountOf(_tokenId, _targetAddress) + _profit;
             IERC20(_targetAddress).approve(
                 uniswapV2RouterAddress, 
                 _amountIn
@@ -206,7 +209,10 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
             (address _targetAddress,) = investmentTarget(index);
             uint256 _balBeforeSwap = basedToken.balanceOf(address(this));
 
-            uint256 _amountIn = investTokenAmounts[_tokenId][_targetAddress];
+            uint256 _amountIn = investTokenAmountOf(
+                _tokenId, 
+                _targetAddress
+            );
             IERC20(_targetAddress).approve(
                 uniswapV2RouterAddress, 
                 _amountIn
@@ -289,8 +295,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         checkIsTargetToken(_tokenAddress);
         
         uint256 _realBalance = IERC20(_tokenAddress).balanceOf(address(this));
-        uint256 _investAmount = totalInvestTokenAmounts[_tokenAddress];
-        totalProfitTokenAmounts[_tokenAddress] = _realBalance - _investAmount;
+        totalProfitTokenAmounts[_tokenAddress] = _realBalance - totalInvestTokenAmountOf(_tokenAddress);
     }
 
     function setNewFlashLoanInterestRate(
@@ -307,8 +312,8 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
 
         for (uint256 index; index < _votedTokenIds.length; index++) {
             uint256 _tokenId = _votedTokenIds[index];
-            _totalVotedBasedAmount = _totalVotedBasedAmount + basedTokenAmounts[_tokenId];
-            _totalVotedLockedTimeInterval = _totalVotedLockedTimeInterval + lockedTimeIntervals[_tokenId];
+            _totalVotedBasedAmount = _totalVotedBasedAmount +basedTokenAmountOf(_tokenId);
+            _totalVotedLockedTimeInterval = _totalVotedLockedTimeInterval + lockedTimeIntervalOf(_tokenId);
         }
 
         uint256 _votedValue = _totalVotedBasedAmount * _totalVotedLockedTimeInterval * 10000 / (totalBasedTokenAmount * totalLockedTimeInterval);
@@ -370,7 +375,7 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
                 "Fail to swap"
             );
 
-            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] + _swapAmounts[1];
+            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmountOf(_targetAddress) + _swapAmounts[1];
             investTokenAmounts[_tokenId][_targetAddress] = _swapAmounts[1];
         }
     }
@@ -395,14 +400,15 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
     function burn(
         uint256 _tokenId
     ) private {
-        totalLockedTimeInterval = totalLockedTimeInterval - lockedTimeIntervals[_tokenId];
-        totalBasedTokenAmount = totalBasedTokenAmount - basedTokenAmounts[_tokenId];
+        totalLockedTimeInterval = totalLockedTimeInterval - lockedTimeIntervalOf(_tokenId);
+        totalBasedTokenAmount = totalBasedTokenAmount - basedTokenAmountOf(_tokenId);
 
         for (uint256 index; index < investmentTargets.length; index ++) {    
             (address _targetAddress,) = investmentTarget(index);
-            uint256 _investAmount = investTokenAmounts[_tokenId][_targetAddress];
 
-            totalInvestTokenAmounts[_targetAddress] = totalInvestTokenAmounts[_targetAddress] - _investAmount;
+            totalInvestTokenAmounts[_targetAddress] = 
+                totalInvestTokenAmountOf(_targetAddress) - 
+                investTokenAmountOf(_tokenId, _targetAddress);
         }
 
         _burn(_tokenId);
@@ -412,12 +418,15 @@ contract DecentFolio is ERC721, DecentFolioStorage, AdminOnly {
         uint256 _tokenId, 
         address _tokenAddress
     ) private view returns (uint256 amount) {
-        uint256 _lockedTimeInterval = lockedTimeIntervals[_tokenId];
-        uint256 _investAmount = investTokenAmounts[_tokenId][_tokenAddress];
+        uint256 _lockedTimeInterval = lockedTimeIntervalOf(_tokenId);
+        uint256 _investAmount = investTokenAmountOf(
+            _tokenId, 
+            _tokenAddress
+        );
 
-        uint256 _totalInvestAmount = totalInvestTokenAmounts[_tokenAddress];
+        uint256 _totalInvestAmount = totalInvestTokenAmountOf(_tokenAddress);
 
-        uint256 _profitAmount = (totalProfitTokenAmounts[_tokenAddress] * _lockedTimeInterval * _investAmount) / (_totalInvestAmount * totalLockedTimeInterval);
+        uint256 _profitAmount = (totalProfitTokenAmountOf(_tokenAddress) * _lockedTimeInterval * _investAmount) / (_totalInvestAmount * totalLockedTimeInterval);
         return _profitAmount;
     }
 }

@@ -19,7 +19,7 @@ abstract contract DecentFolioStorage {
 
     uint256 public totalSupply; //Note: Increase with mint, do not decrease with burn.
 
-    uint256 totalBasedTokenAmount;
+    uint256 public totalBasedTokenAmount;
     mapping(uint256 totkenId => uint256) public basedTokenAmounts;
     uint256 public totalLockedTimeInterval;
     mapping(uint256 tokenId => uint256) public lockedTimeIntervals;
@@ -42,5 +42,42 @@ abstract contract DecentFolioStorage {
     ) public view returns (address targetTokenAddress, uint256 targetTokenPercentage) {
         InvestmentTarget memory target = investmentTargets[index];
         return (target.tokenAddress, target.percentage);
+    }
+
+    function basedTokenAmountOf(
+        uint256 _tokenId
+    ) public view returns (uint256) {
+        return basedTokenAmounts[_tokenId];
+    }
+
+    function lockedTimeIntervalOf(
+        uint256 _tokenId
+    ) public view returns (uint256) {
+        return lockedTimeIntervals[_tokenId];
+    }
+
+    function unlockedTimeStampOf(
+        uint256 _tokenId
+    ) public view returns (uint256) {
+        return unlockedTimeStamps[_tokenId];
+    }
+
+    function totalInvestTokenAmountOf(
+        address _tokenAddress
+    ) public view returns (uint256) {
+        return totalInvestTokenAmounts[_tokenAddress];
+    }
+
+    function investTokenAmountOf(
+        uint256 _tokenId,
+        address _tokenAddress
+    ) public view returns (uint256) {
+        return investTokenAmounts[_tokenId][_tokenAddress];
+    }
+
+    function totalProfitTokenAmountOf(
+        address _tokenAddress
+    ) public view returns (uint256) {
+        return totalProfitTokenAmounts[_tokenAddress];
     }
 }
