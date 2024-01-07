@@ -73,6 +73,8 @@ contract ConstructorAndCreateFolioTest is Test, AddressBook {
         assertEq(decentFolio.admin(), address(decentFolioManager));
         assertEq(decentFolio.basedTokenAddress(), basedTokenAddress);
         assertEq(decentFolio.uniswapV2RouterAddress(), _uniswapV2Router);
+        assertEq(decentFolio.flashLoanInterestRate(), flashLoanInterestRate);
+        assertEq(decentFolio.proposalExectedThreshold(), propsalExecutedThreshold);
         assert(decentFolio.initialized());
         
         for (uint256 i; i < targetTokenAddress.length; i++) {

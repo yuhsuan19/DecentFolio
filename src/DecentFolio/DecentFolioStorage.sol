@@ -32,7 +32,7 @@ abstract contract DecentFolioStorage {
 
     uint256 public flashLoanInterestRate; // Note: will be multiplied by 0.0001
 
-    uint256 proposalExectedThreshold;
+    uint256 public proposalExectedThreshold;
 
     bool public initialized;
     bool reentrancyLocked;
