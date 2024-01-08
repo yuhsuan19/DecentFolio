@@ -7,7 +7,8 @@
 - DecentFolio operates on a governance model, managing in a decentralized manner.
 
 ## System Architecture
-<img width="707" alt="截圖 2024-01-08 下午3 35 18" src="https://github.com/yuhsuan19/DecentFolio/assets/22169860/45f677fa-e2f0-4ac5-b029-bcb1dca86f14">
+<img width="877" alt="Architecture" src="https://github.com/yuhsuan19/DecentFolio/assets/22169860/fa3b7324-8a50-4bec-a9d2-6a7235b0a74e">
+
 
 ## Usage
 ### Build
