@@ -105,36 +105,73 @@ contract FlashLoanTest is Test, AddressBook {
         assertEq(_balanceAfter, _balanceBefore + _interest);
     }
 
-    // Note: pass, will be revert as expection, but cannot catch the revertion
-    // function test_FlashLoan_notPayInterest() public {
-    //     MockBadFlashLoanBorrower badBorrower = new MockBadFlashLoanBorrower(
-    //         address(decentFolio)
-    //     );
-    //     // vm.expectRevert("Insufficeient repay amount");
-    //     decentFolio.flashLoan(
-    //         _chainlink, 
-    //         10 * 10 ** ERC20(_chainlink).decimals(), 
-    //         address(badBorrower), 
-    //         ""
-    //     );
-    // }
+    function test_FlashLoan_notPayInterest() public {
+        MockBadFlashLoanBorrower badBorrower = new MockBadFlashLoanBorrower(
+            address(decentFolio)
+        );
+        uint256 _borrowAmount = 10 * 10 ** ERC20(_chainlink).decimals();
+        vm.expectRevert("Insufficeient repay amount");
+        decentFolio.flashLoan(
+            _chainlink, 
+            _borrowAmount, 
+            address(badBorrower), 
+            ""
+        );
+    }
 
-    // function test_FlashLoan_InsufficeientBalance() public {
-    //     address user = makeAddr("user");
-    //     MockFlashLoanBorrower mockFlashLoanBorrower = new MockFlashLoanBorrower(
-    //         address(decentFolio),
-    //         user
-    //     );
-    //     vm.startPrank(user);
-    //     vm.expectRevert("Insufficeient balance");
-    //     decentFolio.flashLoan(
-    //         _chainlink, 
-    //         1000_000_000 * 10 ** ERC20(_chainlink).decimals(), 
-    //         address(mockFlashLoanBorrower), 
-    //         ""
-    //     );
-    //     vm.stopPrank();
-    // }
+    function test_FlashLoan_InsufficeientBalance() public {
+        address user = makeAddr("user");
+        MockFlashLoanBorrower mockFlashLoanBorrower = new MockFlashLoanBorrower(
+            address(decentFolio),
+            user
+        );
+        vm.startPrank(user);
+        uint256 _borrowAmount = 1000_000_000 * 10 ** ERC20(_chainlink).decimals();
+        vm.expectRevert("Insufficeient balance");
+        decentFolio.flashLoan(
+            _chainlink, 
+            _borrowAmount, 
+            address(mockFlashLoanBorrower), 
+            ""
+        );
+        vm.stopPrank();
+    }
+
+    function test_FlashLoan_WrongToken() public {
+        address user = makeAddr("user");
+        MockFlashLoanBorrower mockFlashLoanBorrower = new MockFlashLoanBorrower(
+            address(decentFolio),
+            user
+        );
+        vm.startPrank(user);
+        uint256 _borrowAmount = 10 * 10 ** ERC20(_chainlink).decimals();
+        vm.expectRevert("The input token is not one of the target tokens");
+        decentFolio.flashLoan(
+            _pepe, 
+            _borrowAmount, 
+            address(mockFlashLoanBorrower), 
+            ""
+        );
+        vm.stopPrank();
+    }
+
+    function test_FlashLoan_BorrowAmountTooSmall() public {
+        address user = makeAddr("user");
+        MockFlashLoanBorrower mockFlashLoanBorrower = new MockFlashLoanBorrower(
+            address(decentFolio),
+            user
+        );
+        vm.startPrank(user);
+        uint256 _borrowAmount = 1000;
+        vm.expectRevert("The borrow amount cannot be less than 10_000");
+        decentFolio.flashLoan(
+            _chainlink, 
+            _borrowAmount, 
+            address(mockFlashLoanBorrower), 
+            ""
+        );
+        vm.stopPrank();
+    }
 
     function addLiquidities() private {
         IUniswapV2Router01 router = IUniswapV2Router01(_uniswapV2Router);
